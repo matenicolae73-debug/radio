@@ -1,0 +1,78 @@
+name: Unpack Viral Radio CLEAN
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find CLEAN ZIP
+        run: |
+          set -e
+
+          ZIP=$(find . -maxdepth 1 -type f -name "Viral-Radio-REAL-LISTENERS-0-CLEAN.zip" | head -n 1)
+
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: Viral-Radio-REAL-LISTENERS-0-CLEAN.zip NU exista in main!"
+            echo "ZIP-uri gasite:"
+            find . -maxdepth 1 -type f -name "*.zip" -print
+            exit 1
+          fi
+
+          echo "ZIP gasit: $ZIP"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Unpack ZIP
+        run: |
+          set -e
+
+          rm -rf /tmp/viral-radio
+          mkdir -p /tmp/viral-radio
+
+          unzip -o "$ZIP" -d /tmp/viral-radio
+
+          echo "=== FISIERE DIN ZIP ==="
+          find /tmp/viral-radio -type f -print
+
+      - name: Find index.html
+        run: |
+          set -e
+
+          INDEX=$(find /tmp/viral-radio -type f -name "index.html" | head -n 1)
+
+          if [ -z "$INDEX" ]; then
+            echo "ERROR: index.html NU a fost gasit!"
+            exit 1
+          fi
+
+          echo "index.html: $INDEX"
+          echo "INDEX=$INDEX" >> "$GITHUB_ENV"
+
+      - name: Copy project to main
+        run: |
+          set -e
+
+          PROJECT_DIR="${INDEX%/index.html}"
+
+          echo "Folder proiect: $PROJECT_DIR"
+
+          cp -R "$PROJECT_DIR"/. .
+
+          rm -f "$ZIP"
+
+          echo "=== MAIN DUPA UNPACK ==="
+          ls -la
+
+      - name: Commit and Push
+        run: |
+         
